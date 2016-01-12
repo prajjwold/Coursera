@@ -313,6 +313,7 @@ public class MapGraph {
 	public List<GeographicPoint> dijkstra(GeographicPoint start, GeographicPoint goal,
 			Consumer<GeographicPoint> nodeSearched) {
 		// TODO: Implement this method in WEEK 3
+
 		// Setup - check validity of inputs
 		if (start == null || goal == null)
 			throw new NullPointerException("Cannot find route from or to null node");
@@ -327,42 +328,43 @@ public class MapGraph {
 			return null;
 		}
 
-		// setup to begin BFS
+		// setup to begin Dijkstra Algorithm
 		HashMap<MapNode, MapNode> parentMap = new HashMap<MapNode, MapNode>();
 		PriorityQueue<MapNode> toExplore = new PriorityQueue<>();
 		HashSet<MapNode> visited = new HashSet<MapNode>();
+		// initialize distance for each node to infinity
 		for (MapNode mapNode : pointNodeMap.values()) {
 			mapNode.setActualDistance(Double.POSITIVE_INFINITY);
 			mapNode.setDistance(Double.POSITIVE_INFINITY);
 		}
+		// enqueue start node in priority queue with distance 0
 		startNode.setActualDistance(0);
 		startNode.setDistance(0);
 		toExplore.add(startNode);
 		MapNode next = null;
-
-		double currDistance = 0.0;
 		while (!toExplore.isEmpty()) {
 			next = toExplore.remove();
-			currDistance += next.getDistance();
 			if (!visited.contains(next)) {
 				visited.add(next);
 				// hook for visualization
+
 				nodeSearched.accept(next.getLocation());
 				if (next.equals(endNode))
 					break;
-				Set<MapNode> neighbors = getNeighbors(next);
-				double distance = 0.0;
-				for (MapNode neighbor : neighbors) {
+				for (MapEdge edge : next.getEdges()) {
+					MapNode neighbor = edge.getOtherNode(next);
 					if (!visited.contains(neighbor)) {
 						// if(path through curr to n is shorter)
 						// update n's distance
 						// update curr as n's parent in parent map
 						// enqueue {n,distance} into PriorityQueue
-
-						// parentMap.put(neighbor, next);
-						// neighbor.setActualDistance(actualDistance);
-						// neighbor.setDistance(distance);
-						// toExplore.add(neighbor);
+						double dist = next.getDistance() + edge.getLength();
+						if (dist < neighbor.getDistance()) {
+							neighbor.setActualDistance(dist);
+							neighbor.setDistance(dist);
+							parentMap.put(neighbor, next);
+							toExplore.add(neighbor);
+						}
 					}
 				}
 			}
@@ -374,7 +376,7 @@ public class MapGraph {
 
 		// Reconstruct the parent path
 		List<GeographicPoint> path = reconstructPath(parentMap, startNode, endNode);
-
+		System.out.println("Nodes Visited: " + visited.size());
 		return path;
 	}
 
@@ -412,10 +414,71 @@ public class MapGraph {
 			Consumer<GeographicPoint> nodeSearched) {
 		// TODO: Implement this method in WEEK 3
 
-		// Hook for visualization. See writeup.
-		// nodeSearched.accept(next.getLocation());
+		// Setup - check validity of inputs
+		if (start == null || goal == null)
+			throw new NullPointerException("Cannot find route from or to null node");
+		MapNode startNode = pointNodeMap.get(start);
+		MapNode endNode = pointNodeMap.get(goal);
+		if (startNode == null) {
+			System.err.println("Start node " + start + " does not exist");
+			return null;
+		}
+		if (endNode == null) {
+			System.err.println("End node " + goal + " does not exist");
+			return null;
+		}
 
-		return null;
+		// setup to begin Dijkstra Algorithm
+		HashMap<MapNode, MapNode> parentMap = new HashMap<MapNode, MapNode>();
+		PriorityQueue<MapNode> toExplore = new PriorityQueue<>();
+		HashSet<MapNode> visited = new HashSet<MapNode>();
+		// initialize distance for each node to infinity
+		for (MapNode mapNode : pointNodeMap.values()) {
+			mapNode.setActualDistance(Double.POSITIVE_INFINITY);
+			mapNode.setDistance(Double.POSITIVE_INFINITY);
+		}
+		// enqueue start node in priority queue with distance 0
+		startNode.setActualDistance(0);
+		startNode.setDistance(0);
+		toExplore.add(startNode);
+		MapNode next = null;
+		while (!toExplore.isEmpty()) {
+			next = toExplore.remove();
+			if (!visited.contains(next)) {
+				visited.add(next);
+				// hook for visualization
+				nodeSearched.accept(next.getLocation());
+				if (next.equals(endNode))
+					break;
+				for (MapEdge edge : next.getEdges()) {
+					MapNode neighbor = edge.getOtherNode(next);
+					if (!visited.contains(neighbor)) {
+						// if(path through curr to n is shorter)
+						// update n's distance
+						// update curr as n's parent in parent map
+						// enqueue {n,distance} into PriorityQueue
+						double dist = next.getDistance() + edge.getLength();
+						double currToGoalDist = neighbor.getLocation().distance(goal);
+						if (dist + currToGoalDist < neighbor.getDistance()) {
+							neighbor.setActualDistance(dist);
+							neighbor.setDistance(dist + currToGoalDist);
+							parentMap.put(neighbor, next);
+							toExplore.add(neighbor);
+						}
+					}
+				}
+			}
+		}
+		if (!next.equals(endNode)) {
+			System.out.println("No path found from " + start + " to " + goal);
+			return null;
+		}
+
+		// Reconstruct the parent path
+		List<GeographicPoint> path = reconstructPath(parentMap, startNode, endNode);
+		System.out.println("Nodes Visited: " + visited.size());
+		return path;
+
 	}
 
 	// main method for testing
@@ -429,32 +492,32 @@ public class MapGraph {
 		 */
 
 		// more advanced testing
-		System.out.print("Making a new map...");
+		// System.out.print("Making a new map...");
+		// MapGraph theMap = new MapGraph();
+		// System.out.print("DONE. \nLoading the map...");
+		//
+		// GraphLoader.loadRoadMap("data/testdata/simpletest.map", theMap);
+		// System.out.println("DONE.");
+		//
+		// System.out.println("Num nodes: " + theMap.getNumVertices());
+		// System.out.println("Num edges: " + theMap.getNumEdges());
+		//
+		// List<GeographicPoint> route = theMap.bfs(new GeographicPoint(1.0,
+		// 1.0), new GeographicPoint(8.0, -1.0));
+		//
+		// System.out.println(route);
+
+		// Use this code in Week 3 End of Week Quiz MapGraph theMap = new
 		MapGraph theMap = new MapGraph();
 		System.out.print("DONE. \nLoading the map...");
-
-		GraphLoader.loadRoadMap("data/testdata/simpletest.map", theMap);
+		GraphLoader.loadRoadMap("data/maps/utc.map", theMap);
 		System.out.println("DONE.");
 
-		System.out.println("Num nodes: " + theMap.getNumVertices());
-		System.out.println("Num edges: " + theMap.getNumEdges());
+		GeographicPoint start = new GeographicPoint(32.8648772, -117.2254046);
+		GeographicPoint end = new GeographicPoint(32.8660691, -117.217393);
 
-		List<GeographicPoint> route = theMap.bfs(new GeographicPoint(1.0, 1.0), new GeographicPoint(8.0, -1.0));
-
-		System.out.println(route);
-
-		/*
-		 * // Use this code in Week 3 End of Week Quiz MapGraph theMap = new
-		 * MapGraph(); System.out.print("DONE. \nLoading the map...");
-		 * GraphLoader.loadRoadMap("data/maps/utc.map", theMap);
-		 * System.out.println("DONE.");
-		 * 
-		 * GeographicPoint start = new GeographicPoint(32.868629, -117.215393);
-		 * GeographicPoint end = new GeographicPoint(32.868629, -117.215393);
-		 * 
-		 * List<GeographicPoint> route = theMap.dijkstra(start,end);
-		 * List<GeographicPoint> route2 = theMap.aStarSearch(start,end);
-		 */
+		List<GeographicPoint> route = theMap.dijkstra(start,end);
+		List<GeographicPoint> route2 = theMap.aStarSearch(start,end);
 
 	}
 
